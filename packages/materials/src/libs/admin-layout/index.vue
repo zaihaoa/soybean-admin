@@ -40,6 +40,8 @@ type SlotFn = (props?: Record<string, unknown>) => any;
 type Slots = {
   /** Main */
   default?: SlotFn;
+  /** Overlay anchored to the content area */
+  contentOverlay?: SlotFn;
   /** Header */
   header?: SlotFn;
   /** Tab */
@@ -182,6 +184,7 @@ function handleClickMask() {
       <template v-if="showMobileSider">
         <aside
           class="absolute left-0 top-0 h-full bg-white"
+          :inert="siderCollapse"
           :class="[
             commonClass,
             mobileSiderClass,
@@ -200,12 +203,18 @@ function handleClickMask() {
       </template>
 
       <!-- Main Content -->
-      <main
-        :id="isContentScroll ? scrollElId : undefined"
-        class="flex flex-col flex-grow"
-        :class="[commonClass, contentClass, leftGapClass, { 'overflow-y-auto': isContentScroll }]"
-      >
-        <slot></slot>
+      <main class="flex flex-grow" :class="[commonClass, leftGapClass, { 'min-h-0': isContentScroll }]">
+        <div class="relative isolate min-w-0 flex flex-1 flex-col">
+          <!-- Keep sticky headers and columns below the content overlay. -->
+          <div
+            :id="isContentScroll ? scrollElId : undefined"
+            class="isolate flex flex-grow flex-col"
+            :class="[contentClass, { 'min-h-0 overflow-y-auto': isContentScroll }]"
+          >
+            <slot></slot>
+          </div>
+          <slot name="contentOverlay"></slot>
+        </div>
       </main>
 
       <!-- Footer -->

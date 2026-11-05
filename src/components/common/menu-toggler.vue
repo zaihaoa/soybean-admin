@@ -9,6 +9,8 @@ interface Props {
   collapsed?: boolean;
   /** Arrow style icon */
   arrowIcon?: boolean;
+  /** Hide the hover tooltip */
+  hideTooltip?: boolean;
   zIndex?: number;
 }
 
@@ -18,6 +20,8 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 type NumberBool = 0 | 1;
+
+const label = computed(() => $t(props.collapsed ? 'icon.expand' : 'icon.collapse'));
 
 const icon = computed(() => {
   const icons: Record<NumberBool, Record<NumberBool, string>> = {
@@ -42,7 +46,9 @@ const icon = computed(() => {
 <template>
   <ButtonIcon
     :key="String(collapsed)"
-    :tooltip-content="collapsed ? $t('icon.expand') : $t('icon.collapse')"
+    :aria-label="label"
+    :aria-expanded="!collapsed"
+    :tooltip-content="hideTooltip ? '' : label"
     tooltip-placement="bottom-start"
     :z-index="zIndex"
   >

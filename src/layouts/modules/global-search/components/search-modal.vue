@@ -1,10 +1,11 @@
 <script lang="ts" setup>
-import { computed, ref, shallowRef } from 'vue';
+import { computed, ref, shallowRef, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { onKeyStroke, useDebounceFn } from '@vueuse/core';
 import { $t } from '@/locales';
 import { useAppStore } from '@/store/modules/app';
 import { useRouteStore } from '@/store/modules/route';
+import { usePageOverlay } from '@/hooks/common/page-overlay';
 import SearchFooter from './search-footer.vue';
 import SearchResult from './search-result.vue';
 
@@ -13,6 +14,7 @@ defineOptions({ name: 'SearchModal' });
 const router = useRouter();
 const appStore = useAppStore();
 const routeStore = useRouteStore();
+const { tabId, overlayProps } = usePageOverlay();
 
 const isMobile = computed(() => appStore.isMobile);
 
@@ -25,6 +27,8 @@ const handleSearch = useDebounceFn(search, 300);
 const visible = defineModel<boolean>('show', { required: true });
 
 function search() {
+  if (!visible.value) return;
+
   resultOptions.value = routeStore.searchMenus.filter(menu => {
     const trimKeyword = keyword.value.toLocaleLowerCase().trim();
     const title = (menu.i18nKey ? $t(menu.i18nKey) : menu.label).toLocaleLowerCase();
@@ -34,16 +38,18 @@ function search() {
 }
 
 function handleClose() {
-  // handle with setTimeout to prevent user from seeing some operations
-  setTimeout(() => {
-    visible.value = false;
-    resultOptions.value = [];
-    keyword.value = '';
-  }, 200);
+  visible.value = false;
+}
+
+function resetSearch() {
+  if (visible.value) return;
+  resultOptions.value = [];
+  keyword.value = '';
 }
 
 /** key up */
 function handleUp() {
+  if (!visible.value) return;
   const { length } = resultOptions.value;
   if (length === 0) return;
 
@@ -57,6 +63,7 @@ function handleUp() {
 
 /** key down */
 function handleDown() {
+  if (!visible.value) return;
   const { length } = resultOptions.value;
   if (length === 0) return;
 
@@ -74,7 +81,7 @@ function getActivePathIndex() {
 
 /** key enter */
 function handleEnter() {
-  if (resultOptions.value?.length === 0 || activePath.value === '') return;
+  if (!visible.value || resultOptions.value.length === 0 || activePath.value === '') return;
   handleClose();
   router.push(activePath.value);
 }
@@ -87,19 +94,22 @@ function registerShortcut() {
 }
 
 registerShortcut();
+watch(tabId, handleClose);
 </script>
 
 <template>
   <NModal
     v-model:show="visible"
+    v-bind="overlayProps"
     :segmented="{ footer: 'soft' }"
     :closable="false"
     preset="card"
+    transform-origin="center"
     auto-focus
     footer-style="padding: 0; margin: 0"
     class="fixed left-0 right-0"
     :class="[isMobile ? 'size-full top-0px rounded-0' : 'w-630px top-50px']"
-    @after-leave="handleClose"
+    @after-leave="resetSearch"
   >
     <NInputGroup>
       <NInput v-model:value="keyword" clearable :placeholder="$t('common.keywordSearch')" @input="handleSearch">

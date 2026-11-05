@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, h } from 'vue';
 import { NConfigProvider, darkTheme } from 'naive-ui';
-import type { WatermarkProps } from 'naive-ui';
+import type { DataTableRenderSorter, WatermarkProps } from 'naive-ui';
 import { naiveDateLocales, naiveLocales } from './locales/naive';
 import { useAppStore } from './store/modules/app';
 import { useThemeStore } from './store/modules/theme';
@@ -38,6 +38,26 @@ const watermarkProps = computed<WatermarkProps>(() => {
     zIndex: 9999
   };
 });
+
+const renderTableSorter: DataTableRenderSorter = ({ order }) =>
+  h(
+    'svg',
+    {
+      class: 'table-sort-indicator',
+      width: 14,
+      height: 16,
+      viewBox: '0 0 14 16',
+      fill: 'currentColor',
+      'aria-hidden': true,
+      focusable: 'false'
+    },
+    [
+      h('path', { d: 'M7 1 13 7H1Z', class: { 'is-active': order === 'ascend' } }),
+      h('path', { d: 'M1 9H13L7 15Z', class: { 'is-active': order === 'descend' } })
+    ]
+  );
+
+const componentOptions = { DataTable: { renderSorter: renderTableSorter } };
 </script>
 
 <template>
@@ -46,6 +66,7 @@ const watermarkProps = computed<WatermarkProps>(() => {
     :theme-overrides="themeStore.naiveTheme"
     :locale="naiveLocale"
     :date-locale="naiveDateLocale"
+    :component-options="componentOptions"
     class="h-full"
   >
     <AppProvider>

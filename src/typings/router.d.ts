@@ -46,6 +46,10 @@ declare module 'vue-router' {
     iconFontSize?: number;
     /** Router order */
     order?: number | null;
+    /** Menu type used by navigation. */
+    menuType?: Api.SystemManage.MenuType | null;
+    /** Display group for a direct child of a top-level menu. */
+    menuGroupName?: string | null;
     /** The outer link of the route */
     href?: string | null;
     /** Whether to hide the route in the menu */

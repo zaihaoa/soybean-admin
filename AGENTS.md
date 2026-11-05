@@ -1,9 +1,16 @@
 ## Coding standards
 
-- **TypeScript** — obey the `typescript-functional-style` skill for every `**/*.{ts,tsx,js,jsx}` file. Read `~/.agents/skills/typescript-functional-style/SKILL.md` before writing code.
-- **Vue SFC** — obey the `vue-sfc-structure` skill for every `**/*.vue` file. Read `~/.agents/skills/vue-sfc-structure/SKILL.md` before writing code.
+- **TypeScript** — obey the `typescript-functional-style` skill for every `**/*.{ts,tsx,js,jsx}` file. Read `.agents/skills/typescript-functional-style/SKILL.md` before writing code.
+- **Vue SFC** — obey the `vue-sfc-structure` skill for every `**/*.vue` file. Read `.agents/skills/vue-sfc-structure/SKILL.md` before writing code.
 
 These rules are mandatory: read the skill instead of guessing the convention, and follow it even for small edits.
+
+- Use `confirmAction` from `src/utils/confirm-action.ts` for action confirmations so they open in the shared centered dialog.
+
+## Business list tables
+
+- Use `useNaiveTable` or `useNaivePaginatedTable` for business lists. Provide a stable `columnConfigCode` such as `manage-menu`, with no application prefix. If a page has multiple independent lists, include the list purpose in each identifier.
+- Connect `columnSettings` to `TableHeaderOperation` and bind `columnTableProps` and `tableKey` to the data table. Define stable column keys and declare any required visible columns.
 
 ## Commits
 

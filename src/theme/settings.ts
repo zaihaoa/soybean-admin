@@ -22,9 +22,9 @@ export const themeSettings: App.Theme.ThemeSetting = {
     animateMode: 'fade-slide'
   },
   header: {
-    height: 56,
+    height: 48,
     breadcrumb: {
-      visible: true,
+      visible: false,
       showIcon: true
     },
     multilingual: {
@@ -37,22 +37,22 @@ export const themeSettings: App.Theme.ThemeSetting = {
   tab: {
     visible: true,
     cache: true,
-    height: 44,
+    height: 36,
     mode: 'chrome',
     closeTabByMiddleClick: false
   },
   fixedHeaderAndTab: true,
   sider: {
     inverted: false,
-    width: 220,
-    collapsedWidth: 64,
-    mixWidth: 90,
-    mixCollapsedWidth: 64,
-    mixChildMenuWidth: 200,
+    width: 192,
+    collapsedWidth: 72,
+    mixWidth: 80,
+    mixCollapsedWidth: 48,
+    mixChildMenuWidth: 180,
     autoSelectFirstMenu: false
   },
   footer: {
-    visible: true,
+    visible: false,
     fixed: false,
     height: 48,
     right: true

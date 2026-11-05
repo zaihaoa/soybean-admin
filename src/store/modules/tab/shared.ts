@@ -170,12 +170,16 @@ export function filterTabsByIds(tabIds: string[], tabs: App.Global.Tab[]) {
  * @param router
  * @param tabs
  */
-export function extractTabsByAllRoutes(router: Router, tabs: App.Global.Tab[]) {
-  const routes = router.getRoutes();
+export function extractTabsByAllRoutes(router: Router, tabs: App.Global.Tab[]): App.Global.Tab[] {
+  const routes = new Map(router.getRoutes().map(route => [route.name, route]));
 
-  const routeNames = routes.map(route => route.name);
+  return tabs.flatMap(tab => {
+    const route = routes.get(tab.routeKey);
+    if (!route) return [];
 
-  return tabs.filter(tab => routeNames.includes(tab.routeKey));
+    const { label, i18nKey, icon, localIcon } = getTabByRoute(route);
+    return [{ ...tab, label, i18nKey, icon, localIcon, oldLabel: tab.oldLabel ? label : undefined }];
+  });
 }
 
 /**

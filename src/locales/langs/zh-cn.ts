@@ -1,3 +1,5 @@
+import { manageZhCn } from '../manage';
+
 const local: App.I18n.Schema = {
   system: {
     title: 'Soybean 管理系统',
@@ -35,9 +37,16 @@ const local: App.I18n.Schema = {
     modifySuccess: '修改成功',
     noData: '无数据',
     operate: '操作',
+    logs: '日志',
+    operationLog: '操作日志',
+    operationType: '操作类型',
+    operator: '操作人',
+    operationTime: '操作时间',
+    operationContent: '操作内容',
     pleaseCheckValue: '请检查输入的值是否合法',
     refresh: '刷新',
     reset: '重置',
+    clear: '清空',
     search: '搜索',
     switch: '切换',
     tip: '提示',
@@ -225,9 +234,14 @@ const local: App.I18n.Schema = {
     404: '页面不存在',
     500: '服务器错误',
     'iframe-page': '外链页面',
-    home: '首页'
+    home: '首页',
+    manage: '系统管理',
+    manage_user: '用户管理',
+    manage_role: '角色管理',
+    manage_menu: '菜单管理'
   },
   page: {
+    manage: manageZhCn,
     login: {
       common: {
         loginOrRegister: '登录 / 注册',
@@ -354,11 +368,15 @@ const local: App.I18n.Schema = {
   },
   datatable: {
     itemCount: '共 {total} 条',
-    fixed: {
-      left: '左固定',
-      right: '右固定',
-      unFixed: '取消固定'
-    }
+    columnFixedLimit: '最多可固定 {count} 项',
+    columnRestore: '恢复默认',
+    columnApply: '应用',
+    columnRemove: '移除',
+    columnMoveTop: '置顶',
+    columnLoadFailed: '列设置加载失败，请重试。',
+    columnInvalid: '已保存的列设置无法读取，可恢复默认后重新保存。',
+    columnUnsupported: '当前版本无法读取较新的列设置。',
+    columnSaveFailed: '列设置保存失败，请重试。'
   }
 };
 

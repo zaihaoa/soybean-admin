@@ -13,3 +13,33 @@ html {
   overflow-x: hidden;
   color: rgb(var(--base-text-color));
 }
+
+.n-data-table .n-data-table-th .n-data-table-th__title-wrapper:has(> .table-sort-indicator) {
+  display: inline-flex;
+}
+
+.table-sort-indicator {
+  flex-shrink: 0;
+  margin-inline-start: 4px;
+  color: var(--n-th-icon-color);
+}
+
+.table-sort-indicator .is-active {
+  fill: var(--n-th-icon-color-active);
+}
+
+.n-data-table-th--sorting {
+  --n-merged-th-color-sorting: var(--n-merged-th-color);
+}
+
+.n-data-table-td--sorting {
+  --n-merged-td-color-sorting: var(--n-merged-td-color);
+}
+
+.n-data-table-td--sorting.n-data-table-td--summary {
+  --n-merged-td-color-sorting: var(--n-merged-th-color);
+}
+
+.n-data-table-td--sorting.n-data-table-td--hover {
+  --n-merged-td-color-sorting: var(--n-merged-td-color-hover);
+}

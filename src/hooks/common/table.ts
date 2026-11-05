@@ -1,12 +1,15 @@
 import { computed, effectScope, onScopeDispose, reactive, shallowRef, watch } from 'vue';
-import type { Ref } from 'vue';
+import type { Ref, VNodeChild } from 'vue';
 import type { PaginationProps } from 'naive-ui';
 import type { FlatResponseData } from '@sa/axios';
 import { useBoolean, useTable } from '@sa/hooks';
-import type { PaginationData, TableColumnCheck, UseTableOptions } from '@sa/hooks';
+import type { PaginationData, UseTableOptions } from '@sa/hooks';
 import { jsonClone } from '@sa/utils';
 import { $t } from '@/locales';
 import { useAppStore } from '@/store/modules/app';
+import { MAX_COLUMN_WIDTH } from './table-column-config';
+import type { ColumnSetting } from './table-column-config';
+import { useTableColumnSettings } from './use-table-column-settings';
 
 export type UseNaiveTableOptions<ResponseData, ApiData, Pagination extends boolean> = Omit<
   UseTableOptions<ResponseData, ApiData, NaiveUI.TableColumn<ApiData>, Pagination>,
@@ -22,52 +25,68 @@ export type UseNaiveTableOptions<ResponseData, ApiData, Pagination extends boole
    * @returns true if the column is visible, false otherwise
    */
   getColumnVisible?: (column: NaiveUI.TableColumn<ApiData>) => boolean;
+  /** Stable page or list identifier for the signed-in user's settings. */
+  columnConfigCode: string;
+  columnSettingsEnabled?: boolean;
+  requiredColumnKeys?: readonly string[];
+  /** Configurable columns shown by default, in the order of the column definitions. */
+  defaultColumnKeys?: readonly string[];
 };
+
+type ColumnCheckOptions<ApiData> = Pick<
+  UseNaiveTableOptions<unknown, ApiData, boolean>,
+  'getColumnVisible' | 'requiredColumnKeys' | 'defaultColumnKeys'
+>;
 
 const SELECTION_KEY = '__selection__';
 
 const EXPAND_KEY = '__expand__';
 
-export function useNaiveTable<ResponseData, ApiData>(options: UseNaiveTableOptions<ResponseData, ApiData, false>) {
-  const scope = effectScope();
-  const appStore = useAppStore();
+export const EMPTY_TABLE_CELL = '--';
 
+export function renderTableCell(value: VNodeChild): VNodeChild {
+  return value == null || (typeof value === 'string' && !value.trim()) ? EMPTY_TABLE_CELL : value;
+}
+
+export function useNaiveTable<ResponseData, ApiData>(options: UseNaiveTableOptions<ResponseData, ApiData, false>) {
   const result = useTable<ResponseData, ApiData, NaiveUI.TableColumn<ApiData>, false>({
     ...options,
-    getColumnChecks: cols => getColumnChecks(cols, options.getColumnVisible),
+    getColumnChecks: cols => getColumnChecks(cols, options),
     getColumns
   });
 
-  // calculate the total width of the table this is used for horizontal scrolling
-  const scrollX = computed(() => {
-    return result.columns.value.reduce((acc, column) => {
-      return acc + Number(column.width ?? column.minWidth ?? 120);
+  return { ...result, ...useColumnProjection(options) };
+}
+
+function useColumnProjection<ApiData>(
+  options: ColumnCheckOptions<ApiData> &
+    Pick<UseNaiveTableOptions<unknown, ApiData, boolean>, 'columns' | 'columnConfigCode' | 'columnSettingsEnabled'>
+) {
+  const definitions = computed(options.columns);
+  const defaults = computed(() => getColumnChecks(definitions.value, options));
+  const { columnSettings, tableChecks, tableKey, onUnstableColumnResize } = useTableColumnSettings(
+    options.columnConfigCode,
+    defaults,
+    options.columnSettingsEnabled
+  );
+  const columnTableProps = computed(() => {
+    const resizeEnabled = options.columnSettingsEnabled !== false && columnSettings.status === 'ready';
+    const columns = getColumns(definitions.value, tableChecks.value, resizeEnabled);
+    const scrollX = columns.reduce((total, column) => {
+      const minWidth = 'minWidth' in column ? numericWidth(column.minWidth) : undefined;
+      return total + (numericWidth(column.width) ?? minWidth ?? 120);
     }, 0);
+
+    return { columns, scrollX, onUnstableColumnResize, renderCell: renderTableCell };
   });
 
-  scope.run(() => {
-    watch(
-      () => appStore.locale,
-      () => {
-        result.reloadColumns();
-      }
-    );
-  });
-
-  onScopeDispose(() => {
-    scope.stop();
-  });
-
-  return {
-    ...result,
-    scrollX
-  };
+  return { columnSettings, tableKey, columnTableProps };
 }
 
 type PaginationParams = Pick<PaginationProps, 'page' | 'pageSize'>;
 
 type UseNaivePaginatedTableOptions<ResponseData, ApiData> = UseNaiveTableOptions<ResponseData, ApiData, true> & {
-  paginationProps?: Omit<PaginationProps, 'page' | 'pageSize' | 'itemCount'>;
+  paginationProps?: Omit<PaginationProps, 'page' | 'itemCount'>;
   /**
    * whether to show the total count of the table
    *
@@ -127,7 +146,7 @@ export function useNaivePaginatedTable<ResponseData, ApiData>(
   const result = useTable<ResponseData, ApiData, NaiveUI.TableColumn<ApiData>, true>({
     ...options,
     pagination: true,
-    getColumnChecks: cols => getColumnChecks(cols, options.getColumnVisible),
+    getColumnChecks: cols => getColumnChecks(cols, options),
     getColumns,
     onFetched: data => {
       pagination.itemCount = data.total;
@@ -146,13 +165,6 @@ export function useNaivePaginatedTable<ResponseData, ApiData>(
   }
 
   scope.run(() => {
-    watch(
-      () => appStore.locale,
-      () => {
-        result.reloadColumns();
-      }
-    );
-
     watch(paginationParams, async newVal => {
       await options.onPaginationParamsChange?.(newVal);
 
@@ -166,6 +178,7 @@ export function useNaivePaginatedTable<ResponseData, ApiData>(
 
   return {
     ...result,
+    ...useColumnProjection(options),
     getDataByPage,
     pagination,
     mobilePagination
@@ -254,68 +267,82 @@ export function defaultTransform<ApiData>(
   };
 }
 
-function getColumnChecks<Column extends NaiveUI.TableColumn<any>>(
-  cols: Column[],
-  getColumnVisible?: (column: Column) => boolean
-) {
-  const checks: TableColumnCheck[] = [];
-
-  cols.forEach(column => {
-    if (isTableColumnHasKey(column)) {
-      checks.push({
-        key: column.key as string,
-        title: column.title!,
-        checked: true,
-        fixed: column.fixed ?? 'unFixed',
-        visible: getColumnVisible?.(column) ?? true
-      });
-    } else if (column.type === 'selection') {
-      checks.push({
-        key: SELECTION_KEY,
-        title: $t('common.check'),
-        checked: true,
-        fixed: column.fixed ?? 'unFixed',
-        visible: getColumnVisible?.(column) ?? false
-      });
-    } else if (column.type === 'expand') {
-      checks.push({
-        key: EXPAND_KEY,
-        title: $t('common.expandColumn'),
-        checked: true,
-        fixed: column.fixed ?? 'unFixed',
-        visible: getColumnVisible?.(column) ?? false
-      });
-    }
-  });
-
-  return checks;
+function numericWidth(value?: string | number) {
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (typeof value === 'string' && /^\d+(?:\.\d+)?px$/.test(value)) return Number.parseFloat(value);
+  return undefined;
 }
 
-function getColumns<Column extends NaiveUI.TableColumn<any>>(cols: Column[], checks: TableColumnCheck[]) {
-  const columnMap = new Map<string, Column>();
-
-  cols.forEach(column => {
+function getColumnChecks<ApiData>(
+  cols: NaiveUI.TableColumn<ApiData>[],
+  { getColumnVisible, requiredColumnKeys, defaultColumnKeys }: ColumnCheckOptions<ApiData>
+): ColumnSetting[] {
+  return cols.map(column => {
     if (isTableColumnHasKey(column)) {
-      columnMap.set(column.key as string, column);
-    } else if (column.type === 'selection') {
-      columnMap.set(SELECTION_KEY, column);
-    } else if (column.type === 'expand') {
-      columnMap.set(EXPAND_KEY, column);
-    }
-  });
-
-  const filteredColumns = checks
-    .filter(item => item.checked)
-    .map(check => {
+      const key = String(column.key);
+      const configurable = key !== 'operate' && (getColumnVisible?.(column) ?? true);
+      const required = requiredColumnKeys?.includes(key) ?? false;
       return {
-        ...columnMap.get(check.key),
-        fixed: check.fixed
-      } as Column;
-    });
+        key,
+        title: column.title ?? key,
+        checked: !configurable || required || (defaultColumnKeys?.includes(key) ?? true),
+        fixed: configurable && column.fixed === 'right' ? 'left' : (column.fixed ?? 'unFixed'),
+        visible: configurable,
+        required,
+        width: numericWidth(column.width),
+        minWidth: 'minWidth' in column ? numericWidth(column.minWidth) : undefined,
+        maxWidth: 'maxWidth' in column ? numericWidth(column.maxWidth) : undefined
+      };
+    }
 
-  return filteredColumns;
+    const selection = column.type === 'selection';
+    return {
+      key: selection ? SELECTION_KEY : EXPAND_KEY,
+      title: $t(selection ? 'common.check' : 'common.expandColumn'),
+      checked: true,
+      fixed: column.fixed ?? 'unFixed',
+      visible: false
+    };
+  });
+}
+
+function getColumns<Column extends NaiveUI.TableColumn<any>>(
+  cols: Column[],
+  checks: readonly ColumnSetting[],
+  resizeEnabled = false
+): Column[] {
+  const columnMap = new Map(
+    cols.map(column => [
+      isTableColumnHasKey(column) ? String(column.key) : column.type === 'selection' ? SELECTION_KEY : EXPAND_KEY,
+      column
+    ])
+  );
+
+  const orderedChecks = [
+    ...checks.filter(check => !check.visible && check.fixed !== 'right'),
+    ...checks.filter(check => check.visible && check.fixed === 'left'),
+    ...checks.filter(check => check.visible && check.fixed === 'unFixed'),
+    ...checks.filter(check => check.fixed === 'right')
+  ];
+
+  return orderedChecks.flatMap(check => {
+    const column = columnMap.get(check.key);
+    if (!column || !check.checked) return [];
+    if (!check.visible) return [column];
+
+    return [
+      {
+        ...column,
+        width: check.width ?? column.width ?? (check.fixed !== 'unFixed' ? (check.minWidth ?? 120) : undefined),
+        minWidth: check.minWidth ?? 48,
+        maxWidth: Math.max(check.minWidth ?? 48, Math.min(check.maxWidth ?? MAX_COLUMN_WIDTH, MAX_COLUMN_WIDTH)),
+        fixed: check.fixed === 'unFixed' ? undefined : check.fixed,
+        resizable: resizeEnabled
+      }
+    ];
+  });
 }
 
 export function isTableColumnHasKey<T>(column: NaiveUI.TableColumn<T>): column is NaiveUI.TableColumnWithKey<T> {
-  return Boolean((column as NaiveUI.TableColumnWithKey<T>).key);
+  return 'key' in column;
 }

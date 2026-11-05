@@ -1,3 +1,5 @@
+import { manageEnUs } from '../manage';
+
 const local: App.I18n.Schema = {
   system: {
     title: 'SoybeanAdmin',
@@ -35,9 +37,16 @@ const local: App.I18n.Schema = {
     modifySuccess: 'Modify Success',
     noData: 'No Data',
     operate: 'Operate',
+    logs: 'Logs',
+    operationLog: 'Operation log',
+    operationType: 'Operation type',
+    operator: 'Operator',
+    operationTime: 'Operation time',
+    operationContent: 'Operation details',
     pleaseCheckValue: 'Please check whether the value is valid',
     refresh: 'Refresh',
     reset: 'Reset',
+    clear: 'Clear',
     search: 'Search',
     switch: 'Switch',
     tip: 'Tip',
@@ -229,9 +238,14 @@ const local: App.I18n.Schema = {
     404: 'Page Not Found',
     500: 'Server Error',
     'iframe-page': 'Iframe',
-    home: 'Home'
+    home: 'Home',
+    manage: 'System management',
+    manage_user: 'Users',
+    manage_role: 'Roles',
+    manage_menu: 'Menus'
   },
   page: {
+    manage: manageEnUs,
     login: {
       common: {
         loginOrRegister: 'Login / Register',
@@ -358,11 +372,15 @@ const local: App.I18n.Schema = {
   },
   datatable: {
     itemCount: 'Total {total} items',
-    fixed: {
-      left: 'Left Fixed',
-      right: 'Right Fixed',
-      unFixed: 'Unfixed'
-    }
+    columnFixedLimit: 'Pin up to {count} columns',
+    columnRestore: 'Restore defaults',
+    columnApply: 'Apply',
+    columnRemove: 'Remove',
+    columnMoveTop: 'Move to top',
+    columnLoadFailed: 'Could not load column settings. Try again.',
+    columnInvalid: 'The saved settings could not be read. Restore defaults to save new settings.',
+    columnUnsupported: 'This version cannot read the newer column settings.',
+    columnSaveFailed: 'Could not save column settings. Try again.'
   }
 };
 

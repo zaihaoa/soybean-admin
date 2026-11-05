@@ -219,6 +219,8 @@ declare namespace App {
       key: string;
       /** The menu label */
       label: string;
+      /** The optional display group */
+      menuGroupName?: string | null;
       /** The menu i18n key */
       i18nKey?: I18n.I18nKey | null;
       /** The route key */
@@ -347,9 +349,16 @@ declare namespace App {
         modifySuccess: string;
         noData: string;
         operate: string;
+        logs: string;
+        operationLog: string;
+        operationType: string;
+        operator: string;
+        operationTime: string;
+        operationContent: string;
         pleaseCheckValue: string;
         refresh: string;
         reset: string;
+        clear: string;
         search: string;
         switch: string;
         tip: string;
@@ -481,6 +490,7 @@ declare namespace App {
       };
       route: Record<I18nRouteKey, string>;
       page: {
+        manage: import('../locales/manage').ManageLocale;
         login: {
           common: {
             loginOrRegister: string;
@@ -580,11 +590,15 @@ declare namespace App {
       };
       datatable: {
         itemCount: string;
-        fixed: {
-          left: string;
-          right: string;
-          unFixed: string;
-        };
+        columnFixedLimit: string;
+        columnRestore: string;
+        columnApply: string;
+        columnRemove: string;
+        columnMoveTop: string;
+        columnLoadFailed: string;
+        columnInvalid: string;
+        columnUnsupported: string;
+        columnSaveFailed: string;
       };
     };
 
@@ -640,9 +654,9 @@ declare namespace App {
     /** The backend service response data */
     type Response<T = unknown> = {
       /** The backend service response code */
-      code: string;
+      code: number;
       /** The backend service response message */
-      msg: string;
+      message: string;
       /** The backend service response data */
       data: T;
     };

@@ -8,11 +8,10 @@ export function useAuth() {
       return false;
     }
 
-    if (typeof codes === 'string') {
-      return authStore.userInfo.buttons.includes(codes);
-    }
-
-    return codes.some(code => authStore.userInfo.buttons.includes(code));
+    const requested = typeof codes === 'string' ? [codes] : codes;
+    const { buttons } = authStore.userInfo;
+    const isAdmin = buttons.includes('*');
+    return requested.some(code => isAdmin || buttons.includes(code));
   }
 
   return {

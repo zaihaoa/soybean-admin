@@ -115,22 +115,20 @@ export function sortRoutesByOrder(routes: ElegantConstRoute[]) {
  *
  * @param routes Auth routes
  */
-export function getGlobalMenusByAuthRoutes(routes: ElegantConstRoute[]) {
-  const menus: App.Global.Menu[] = [];
+export function getGlobalMenusByAuthRoutes(routes: ElegantConstRoute[]): App.Global.Menu[] {
+  return routes.flatMap(route => {
+    if (route.name === 'home' || route.meta?.hideInMenu) return [];
 
-  routes.forEach(route => {
-    if (!route.meta?.hideInMenu) {
-      const menu = getGlobalMenuByBaseRoute(route);
+    const hasChildren = Boolean(route.children?.length);
+    const isDirectory = route.meta?.menuType ? route.meta.menuType === 'DIRECTORY' : hasChildren;
+    const showIcon = isDirectory && Boolean(route.meta?.icon?.trim() || route.meta?.localIcon?.trim());
+    const menu = getGlobalMenuByBaseRoute(route, showIcon);
 
-      if (route.children?.some(child => !child.meta?.hideInMenu)) {
-        menu.children = getGlobalMenusByAuthRoutes(route.children);
-      }
+    if (!route.children?.length) return [menu];
 
-      menus.push(menu);
-    }
+    const children = getGlobalMenusByAuthRoutes(route.children);
+    return children.length ? [{ ...menu, children }] : [];
   });
-
-  return menus;
 }
 
 /**
@@ -166,11 +164,18 @@ export function updateLocaleOfGlobalMenus(menus: App.Global.Menu[]) {
  *
  * @param route
  */
-function getGlobalMenuByBaseRoute(route: RouteLocationNormalizedLoaded | ElegantConstRoute) {
+function getGlobalMenuByBaseRoute(route: RouteLocationNormalizedLoaded | ElegantConstRoute, showIcon = true) {
   const { SvgIconVNode } = useSvgIcon();
 
   const { name, path } = route;
-  const { title, i18nKey, icon = import.meta.env.VITE_MENU_ICON, localIcon, iconFontSize } = route.meta ?? {};
+  const {
+    title,
+    i18nKey,
+    icon = import.meta.env.VITE_MENU_ICON,
+    localIcon,
+    iconFontSize,
+    menuGroupName
+  } = route.meta ?? {};
 
   const label = i18nKey ? $t(i18nKey) : title!;
 
@@ -178,9 +183,10 @@ function getGlobalMenuByBaseRoute(route: RouteLocationNormalizedLoaded | Elegant
     key: name as string,
     label,
     i18nKey,
+    menuGroupName,
     routeKey: name as RouteKey,
     routePath: path as RouteMap[RouteKey],
-    icon: SvgIconVNode({ icon, localIcon, fontSize: iconFontSize || 20 })
+    icon: showIcon ? SvgIconVNode({ icon, localIcon, fontSize: iconFontSize || 20 }) : undefined
   };
 
   return menu;

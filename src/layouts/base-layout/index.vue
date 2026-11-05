@@ -1,15 +1,19 @@
 <script setup lang="ts">
-import { computed, defineAsyncComponent } from 'vue';
+import { computed, defineAsyncComponent, watch } from 'vue';
+import { useRoute } from 'vue-router';
+import { useElementBounding, useWindowSize } from '@vueuse/core';
 import { AdminLayout, LAYOUT_SCROLL_EL_ID } from '@sa/materials';
 import type { LayoutMode } from '@sa/materials';
 import { useAppStore } from '@/store/modules/app';
+import { getTabIdByRoute } from '@/store/modules/tab/shared';
 import { useThemeStore } from '@/store/modules/theme';
+import { providePageOverlay } from '@/hooks/common/page-overlay';
 import { provideMixMenuContext } from '../modules/global-menu/context';
+import { provideVerticalMenuContext } from '../modules/global-menu/context/vertical';
 import GlobalContent from '../modules/global-content/index.vue';
 import GlobalFooter from '../modules/global-footer/index.vue';
 import GlobalHeader from '../modules/global-header/index.vue';
 import GlobalSider from '../modules/global-sider/index.vue';
-import GlobalTab from '../modules/global-tab/index.vue';
 import ThemeDrawer from '../modules/theme-drawer/index.vue';
 
 defineOptions({
@@ -18,7 +22,10 @@ defineOptions({
 
 const appStore = useAppStore();
 const themeStore = useThemeStore();
+const route = useRoute();
+const overlayTabId = computed(() => getTabIdByRoute(route));
 const { secondLevelMenus, childLevelMenus, isActiveFirstLevelMenuHasChildren } = provideMixMenuContext();
+provideVerticalMenuContext();
 
 const GlobalMenu = defineAsyncComponent(() => import('../modules/global-menu/index.vue'));
 
@@ -35,7 +42,7 @@ const headerProps = computed(() => {
     vertical: {
       showLogo: false,
       showMenu: false,
-      showMenuToggler: true
+      showMenuToggler: appStore.isMobile
     },
     'vertical-mix': {
       showLogo: false,
@@ -114,6 +121,30 @@ function getSiderAndCollapsedWidth(isCollapsed: boolean) {
 
   return finalWidth;
 }
+
+const { target: overlayTarget, dialogs: overlayDialogs } = providePageOverlay();
+const wrapperScrollFrame = computed(() =>
+  themeStore.layout.scrollMode === 'wrapper' ? overlayTarget.value?.parentElement : undefined
+);
+const { top: frameTop, bottom: frameBottom } = useElementBounding(wrapperScrollFrame);
+const { height: viewportHeight } = useWindowSize();
+const overlayStyle = computed(() => {
+  if (!wrapperScrollFrame.value) return undefined;
+
+  const fixedHeader = !appStore.fullContent && (themeStore.fixedHeaderAndTab || layoutMode.value === 'horizontal');
+  const fixedFooter = !appStore.fullContent && themeStore.footer.visible && themeStore.footer.fixed;
+  const top = fixedHeader ? themeStore.header.height : 0;
+  const bottom = viewportHeight.value - (fixedFooter ? themeStore.footer.height : 0);
+
+  return {
+    insetBlockStart: `${Math.max(0, top - frameTop.value)}px`,
+    insetBlockEnd: `${Math.max(0, frameBottom.value - bottom)}px`
+  };
+});
+
+watch(overlayTabId, () => {
+  appStore.themeDrawerVisible = false;
+});
 </script>
 
 <template>
@@ -126,8 +157,6 @@ function getSiderAndCollapsedWidth(isCollapsed: boolean) {
     :full-content="appStore.fullContent"
     :fixed-top="themeStore.fixedHeaderAndTab"
     :header-height="themeStore.header.height"
-    :tab-visible="themeStore.tab.visible"
-    :tab-height="themeStore.tab.height"
     :content-class="appStore.contentXScrollable ? 'overflow-x-hidden' : ''"
     :sider-visible="siderVisible"
     :sider-width="siderWidth"
@@ -140,15 +169,16 @@ function getSiderAndCollapsedWidth(isCollapsed: boolean) {
     <template #header>
       <GlobalHeader v-bind="headerProps" />
     </template>
-    <template #tab>
-      <GlobalTab />
-    </template>
     <template #sider>
       <GlobalSider />
     </template>
     <GlobalMenu />
     <GlobalContent />
     <ThemeDrawer />
+    <template #contentOverlay>
+      <div ref="overlayTarget" class="page-overlay" :style="overlayStyle"></div>
+      <NDialogProvider v-if="overlayTarget" :key="overlayTabId" ref="overlayDialogs" :to="overlayTarget" />
+    </template>
     <template #footer>
       <GlobalFooter />
     </template>
@@ -156,6 +186,24 @@ function getSiderAndCollapsedWidth(isCollapsed: boolean) {
 </template>
 
 <style lang="scss">
+.page-overlay {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  contain: strict;
+  pointer-events: none;
+}
+
+.page-overlay .n-modal-mask,
+.page-overlay .n-modal-body-wrapper:not(.n-modal-body-wrapper--mask-hidden) {
+  pointer-events: auto;
+}
+
+.page-overlay .n-modal,
+.page-overlay .n-drawer {
+  max-inline-size: 100%;
+}
+
 #__SCROLL_EL_ID__ {
   @include scrollbar();
 }

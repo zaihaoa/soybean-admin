@@ -23,6 +23,7 @@ import {
   transformMenuToSearchMenus,
   updateLocaleOfGlobalMenus
 } from './shared';
+import { filterAuthRoutesByMenuPermission } from './menu-permission';
 
 export const useRouteStore = defineStore(SetupStoreId.Route, () => {
   const authStore = useAuthStore();
@@ -194,14 +195,10 @@ export const useRouteStore = defineStore(SetupStoreId.Route, () => {
   /** Init static auth route */
   function initStaticAuthRoute() {
     const { authRoutes: staticAuthRoutes } = createStaticRoutes();
-
-    if (authStore.isStaticSuper) {
-      addAuthRoutes(staticAuthRoutes);
-    } else {
-      const filteredAuthRoutes = filterAuthRoutesByRoles(staticAuthRoutes, authStore.userInfo.roles);
-
-      addAuthRoutes(filteredAuthRoutes);
-    }
+    const roleRoutes = authStore.isStaticSuper
+      ? staticAuthRoutes
+      : filterAuthRoutesByRoles(staticAuthRoutes, authStore.userInfo.roles);
+    addAuthRoutes(filterAuthRoutesByMenuPermission(roleRoutes, authStore.userInfo.authMenuList));
 
     handleConstantAndAuthRoutes();
 

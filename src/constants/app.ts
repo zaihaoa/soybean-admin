@@ -3,6 +3,7 @@ import { transformRecordToOption } from '@/utils/common';
 export const GLOBAL_HEADER_MENU_ID = '__GLOBAL_HEADER_MENU__';
 
 export const GLOBAL_SIDER_MENU_ID = '__GLOBAL_SIDER_MENU__';
+export const GLOBAL_SIDER_SUBMENU_ID = '__GLOBAL_SIDER_SUBMENU__';
 
 /** Wheel speed ratio for horizontal scrolling on the global tab bar. <1 slower, >1 faster */
 export const GLOBAL_TAB_WHEEL_SPEED_RATIO = 0.3;

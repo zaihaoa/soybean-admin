@@ -5,3 +5,8 @@ export enum SetupStoreId {
   Route = 'route-store',
   Tab = 'tab-store'
 }
+
+export enum RoleAuthorizationOperation {
+  Grant = 'GRANT',
+  Revoke = 'REVOKE'
+}

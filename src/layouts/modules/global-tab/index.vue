@@ -5,7 +5,6 @@ import { useElementBounding } from '@vueuse/core';
 import { PageTab } from '@sa/materials';
 import { GLOBAL_TAB_WHEEL_SPEED_RATIO } from '@/constants/app';
 import { isPC } from '@/utils/agent';
-import { useAppStore } from '@/store/modules/app';
 import { useTabStore } from '@/store/modules/tab';
 import { useThemeStore } from '@/store/modules/theme';
 import BetterScroll from '@/components/custom/better-scroll.vue';
@@ -16,7 +15,6 @@ defineOptions({
 });
 
 const route = useRoute();
-const appStore = useAppStore();
 const themeStore = useThemeStore();
 const tabStore = useTabStore();
 
@@ -118,10 +116,6 @@ function switchTab(e: MouseEvent, tab: App.Global.Tab) {
   tabStore.switchRouteByTab(tab);
 }
 
-async function refresh() {
-  appStore.reloadPage(500);
-}
-
 interface DropdownConfig {
   visible: boolean;
   x: number;
@@ -197,41 +191,39 @@ init();
 </script>
 
 <template>
-  <DarkModeContainer class="size-full flex-y-center px-16px shadow-tab">
-    <div ref="bsWrapper" class="h-full flex-1-hidden" @wheel="handleWheel">
-      <BetterScroll ref="bsScroll" :options="{ scrollX: true, scrollY: false, click: !isPCFlag }" @click="removeFocus">
-        <div
-          ref="tabRef"
-          class="h-full flex pr-18px"
-          :class="[
-            themeStore.tab.mode === 'chrome' || themeStore.tab.mode === 'slider' ? 'items-end' : 'items-center gap-12px'
-          ]"
+  <div
+    ref="bsWrapper"
+    class="max-h-full min-w-0 flex-1-hidden"
+    :style="{ height: `${themeStore.tab.height}px` }"
+    @wheel="handleWheel"
+  >
+    <BetterScroll ref="bsScroll" :options="{ scrollX: true, scrollY: false, click: !isPCFlag }" @click="removeFocus">
+      <div
+        ref="tabRef"
+        class="h-full flex pr-18px"
+        :class="[
+          themeStore.tab.mode === 'chrome' || themeStore.tab.mode === 'slider' ? 'items-end' : 'items-center gap-12px'
+        ]"
+      >
+        <PageTab
+          v-for="tab in tabStore.tabs"
+          :key="tab.id"
+          :[TAB_DATA_ID]="tab.id"
+          :mode="themeStore.tab.mode"
+          :dark-mode="themeStore.darkMode"
+          :active="tab.id === tabStore.activeTabId"
+          :active-color="themeStore.themeColor"
+          :closable="!tabStore.isTabRetain(tab.id)"
+          @pointerdown="switchTab($event, tab)"
+          @mousedown="handleMousedown($event, tab)"
+          @close="handleCloseTab(tab)"
+          @contextmenu="handleContextMenu($event, tab.id)"
         >
-          <PageTab
-            v-for="tab in tabStore.tabs"
-            :key="tab.id"
-            :[TAB_DATA_ID]="tab.id"
-            :mode="themeStore.tab.mode"
-            :dark-mode="themeStore.darkMode"
-            :active="tab.id === tabStore.activeTabId"
-            :active-color="themeStore.themeColor"
-            :closable="!tabStore.isTabRetain(tab.id)"
-            @pointerdown="switchTab($event, tab)"
-            @mousedown="handleMousedown($event, tab)"
-            @close="handleCloseTab(tab)"
-            @contextmenu="handleContextMenu($event, tab.id)"
-          >
-            <template #prefix>
-              <SvgIcon :icon="tab.icon" :local-icon="tab.localIcon" class="inline-block align-text-bottom text-16px" />
-            </template>
-            <div class="max-w-240px ellipsis-text">{{ tab.label }}</div>
-          </PageTab>
-        </div>
-      </BetterScroll>
-    </div>
-    <ReloadButton :loading="!appStore.reloadFlag" @click="refresh" />
-    <FullScreen :full="appStore.fullContent" @click="appStore.toggleFullContent" />
-  </DarkModeContainer>
+          <div class="max-w-240px ellipsis-text">{{ tab.label }}</div>
+        </PageTab>
+      </div>
+    </BetterScroll>
+  </div>
   <ContextMenu
     :visible="dropdown.visible"
     :tab-id="dropdown.tabId"

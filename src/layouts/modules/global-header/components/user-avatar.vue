@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import type { VNode } from 'vue';
+import { useConfirmAction } from '@/utils/confirm-action';
 import { $t } from '@/locales';
 import { useAuthStore } from '@/store/modules/auth';
 import { useSvgIcon } from '@/hooks/common/icon';
@@ -9,6 +10,8 @@ import { useRouterPush } from '@/hooks/common/router';
 defineOptions({
   name: 'UserAvatar'
 });
+
+const confirmAction = useConfirmAction();
 
 const authStore = useAuthStore();
 const { routerPushByKey, toLogin } = useRouterPush();
@@ -44,14 +47,10 @@ const options = computed(() => {
 });
 
 function logout() {
-  window.$dialog?.info({
-    title: $t('common.tip'),
+  confirmAction({
+    title: $t('common.logout'),
     content: $t('common.logoutConfirm'),
-    positiveText: $t('common.confirm'),
-    negativeText: $t('common.cancel'),
-    onPositiveClick: () => {
-      authStore.resetStore();
-    }
+    onConfirm: authStore.logout
   });
 }
 
@@ -73,7 +72,7 @@ function handleDropdown(key: DropdownKey) {
     <div>
       <ButtonIcon>
         <SvgIcon icon="ph:user-circle" class="text-icon-large" />
-        <span class="text-16px font-medium">{{ authStore.userInfo.userName }}</span>
+        <span class="text-16px font-medium lt-sm:hidden">{{ authStore.userInfo.userName }}</span>
       </ButtonIcon>
     </div>
   </NDropdown>

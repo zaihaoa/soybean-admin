@@ -1,3 +1,5 @@
+import { manageEnUs } from '../manage';
+
 const local: App.I18n.Schema = {
   system: {
     title: 'SoybeanAdmin',
@@ -229,9 +231,14 @@ const local: App.I18n.Schema = {
     404: 'Page Not Found',
     500: 'Server Error',
     'iframe-page': 'Iframe',
-    home: 'Home'
+    home: 'Home',
+    manage: 'System management',
+    manage_user: 'Users',
+    manage_role: 'Roles',
+    manage_menu: 'Menus'
   },
   page: {
+    manage: manageEnUs,
     login: {
       common: {
         loginOrRegister: 'Login / Register',

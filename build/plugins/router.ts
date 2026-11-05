@@ -31,6 +31,14 @@ export function setupElegantRouter() {
         i18nKey: `route.${key}` as App.I18n.I18nKey
       };
 
+      const manageMeta: Record<string, Partial<RouteMeta>> = {
+        manage: { icon: 'carbon:settings', order: 2 },
+        manage_user: { icon: 'carbon:user-settings', order: 1 },
+        manage_role: { icon: 'carbon:user-role', order: 2 },
+        manage_menu: { icon: 'carbon:menu', order: 3 }
+      };
+      Object.assign(meta, manageMeta[routeName]);
+
       if (constantRoutes.includes(key)) {
         meta.constant = true;
       }

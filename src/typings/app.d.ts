@@ -481,6 +481,7 @@ declare namespace App {
       };
       route: Record<I18nRouteKey, string>;
       page: {
+        manage: import('../locales/manage').ManageLocale;
         login: {
           common: {
             loginOrRegister: string;
@@ -640,9 +641,9 @@ declare namespace App {
     /** The backend service response data */
     type Response<T = unknown> = {
       /** The backend service response code */
-      code: string;
+      code: number;
       /** The backend service response message */
-      msg: string;
+      message: string;
       /** The backend service response data */
       data: T;
     };
